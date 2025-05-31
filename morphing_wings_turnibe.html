@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Wind Turbine Simulator</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: #f3f4f6;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .pulse {
+        animation: pulse 1s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .spin {
+        transition: transform 0.5s ease-in-out;
+        transform-origin: center;
+      }
+    </style>
+  </head>
+  <body class="font-sans">
+    <div class="container mx-auto p-6">
+      <h1 class="text-4xl font-bold text-center mb-8 text-teal-300">
+        🌬️ Smart Wind Turbine Simulator
+      </h1>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Weather Conditions -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-blue-200">
+            🌦️ Weather Conditions
+          </h2>
+          <div class="space-y-1 text-lg">
+            <p id="windSpeed">💨 Wind Speed: -- m/s</p>
+            <p id="temperature">🌡️ Temperature: -- °C</p>
+            <p id="feelsLike">🌡️ Feels Like: -- °C</p>
+            <p id="humidity">💧 Humidity: --%</p>
+            <p id="pressure">🌫️ Pressure: -- hPa</p>
+            <p id="windDir">↗️ Wind Direction: --</p>
+            <p id="sky">🌤️ Sky Condition: --</p>
+          </div>
+        </div>
+
+        <!-- Blade Response -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-green-200">
+            🌀 Blade Response
+          </h2>
+          <div id="blades" class="space-y-2">
+            <div>
+              <strong>Blade 1</strong>: <span id="blade1Angle">--°</span>,
+              <span id="blade1Status">--</span>
+            </div>
+            <div>
+              <strong>Blade 2</strong>: <span id="blade2Angle">--°</span>,
+              <span id="blade2Status">--</span>
+            </div>
+            <div>
+              <strong>Blade 3</strong>: <span id="blade3Angle">--°</span>,
+              <span id="blade3Status">--</span>
+            </div>
+          </div>
+          <svg
+            id="turbineSVG"
+            viewBox="0 0 200 200"
+            class="mx-auto mt-4"
+            width="150"
+            height="150"
+          >
+            <circle
+              cx="100"
+              cy="100"
+              r="90"
+              stroke="#999"
+              stroke-width="2"
+              fill="none"
+            />
+            <line
+              id="blade1"
+              x1="100"
+              y1="100"
+              x2="100"
+              y2="20"
+              stroke="cyan"
+              stroke-width="4"
+              class="spin"
+            />
+            <line
+              id="blade2"
+              x1="100"
+              y1="100"
+              x2="160"
+              y2="160"
+              stroke="lime"
+              stroke-width="4"
+              class="spin"
+            />
+            <line
+              id="blade3"
+              x1="100"
+              y1="100"
+              x2="40"
+              y2="160"
+              stroke="magenta"
+              stroke-width="4"
+              class="spin"
+            />
+          </svg>
+        </div>
+
+        <!-- Power Output -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-yellow-200">
+            ⚡ Power Output
+          </h2>
+          <canvas id="powerChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- New Screens -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- AI Recommendations -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-pink-200">
+            🤖 AI Recommendations
+          </h2>
+          <p id="aiAdvice">Analyzing conditions...</p>
+        </div>
+
+        <!-- Energy Summary -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-indigo-200">
+            📊 Energy Summary
+          </h2>
+          <p>Total Energy Today: <span id="totalEnergy">--</span> kWh</p>
+          <p>Average Output: <span id="avgOutput">--</span> kW</p>
+          <p>Estimated CO₂ Saved: <span id="co2Saved">--</span> kg</p>
+        </div>
+
+        <!-- Turbine Health Monitor -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-red-200">
+            🔧 Turbine Health Monitor
+          </h2>
+          <ul class="list-disc ml-4">
+            <li>Motor Temp: <span id="motorTemp">-- °C</span></li>
+            <li>Vibrations: <span id="vibration">--</span></li>
+            <li>Last Error: <span id="lastError">None</span></li>
+          </ul>
+        </div>
+
+        <!-- Manual Controls -->
+        <div class="glass rounded-xl p-4 shadow-xl">
+          <h2 class="text-2xl font-semibold mb-4 text-purple-200">
+            🎛️ Manual Control Panel
+          </h2>
+          <p>
+            Mode: <strong>Auto</strong> | <em>(manual mode coming soon)</em>
+          </p>
+          <button
+            class="mt-2 bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+            onclick="startSimulation()"
+          >
+            Start Simulation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let chart = new Chart(document.getElementById("powerChart"), {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Power Output (kW)",
+              data: [],
+              fill: false,
+              borderColor: "rgb(255, 206, 86)",
+              tension: 0.1,
+            },
+          ],
+        },
+      });
+
+      let energyToday = 0;
+      let angle = 0;
+
+      function rotateBlades(speed) {
+        angle = (angle + speed * 2) % 360;
+        const svg = document.getElementById("turbineSVG");
+        svg.style.transform = `rotate(${angle}deg)`;
+      }
+
+      function startSimulation() {
+        setInterval(() => {
+          const windSpeed = +(Math.random() * 15).toFixed(1);
+          const temperature = +(15 + Math.random() * 10).toFixed(1);
+          const pressure = +(1000 + Math.random() * 20).toFixed(0);
+          const humidity = +(50 + Math.random() * 50).toFixed(0);
+          const feelsLike = +(temperature + Math.random() * 2 - 1).toFixed(1);
+          const windDir = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][
+            Math.floor(Math.random() * 8)
+          ];
+          const sky = ["Clear", "Cloudy", "Rain", "Fog"][
+            Math.floor(Math.random() * 4)
+          ];
+
+          document.getElementById(
+            "windSpeed"
+          ).textContent = `💨 Wind Speed: ${windSpeed} m/s`;
+          document.getElementById(
+            "temperature"
+          ).textContent = `🌡️ Temperature: ${temperature} °C`;
+          document.getElementById(
+            "feelsLike"
+          ).textContent = `🌡️ Feels Like: ${feelsLike} °C`;
+          document.getElementById(
+            "humidity"
+          ).textContent = `💧 Humidity: ${humidity}%`;
+          document.getElementById(
+            "pressure"
+          ).textContent = `🌫️ Pressure: ${pressure} hPa`;
+          document.getElementById(
+            "windDir"
+          ).textContent = `↗️ Wind Direction: ${windDir}`;
+          document.getElementById(
+            "sky"
+          ).textContent = `🌤️ Sky Condition: ${sky}`;
+
+          const bladeAngles = [
+            windSpeed * 2,
+            windSpeed * 2 + 5,
+            windSpeed * 2 - 5,
+          ];
+          for (let i = 1; i <= 3; i++) {
+            document.getElementById(
+              `blade${i}Angle`
+            ).textContent = `${bladeAngles[i - 1].toFixed(0)}°`;
+            document.getElementById(`blade${i}Status`).textContent =
+              windSpeed > 12 ? "⚠️ High Load" : "✅ Stable";
+          }
+
+          rotateBlades(windSpeed);
+
+          chart.data.labels.push("");
+          chart.data.datasets[0].data.push((windSpeed * 1.5).toFixed(1));
+          if (chart.data.labels.length > 20) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+          }
+          chart.update();
+
+          energyToday += (windSpeed * 1.5) / 60;
+          document.getElementById("totalEnergy").textContent =
+            energyToday.toFixed(1);
+          document.getElementById("avgOutput").textContent = (
+            energyToday / (chart.data.labels.length || 1)
+          ).toFixed(2);
+          document.getElementById("co2Saved").textContent = (
+            energyToday * 0.85
+          ).toFixed(1);
+
+          document.getElementById("motorTemp").textContent =
+            (50 + windSpeed * 0.5).toFixed(1) + " °C";
+          document.getElementById("vibration").textContent =
+            windSpeed > 10 ? "⚠️ Moderate" : "✅ Normal";
+          document.getElementById("lastError").textContent =
+            windSpeed > 14 ? "Overload Warning" : "None";
+
+          document.getElementById("aiAdvice").textContent =
+            windSpeed < 5
+              ? "💡 Suggest reducing blade pitch to catch more wind."
+              : windSpeed > 12
+              ? "🛑 High wind! Consider limiting angle to avoid stress."
+              : "✅ Optimal wind conditions.";
+        }, 1000);
+      }
+    </script>
+  </body>
+</html>
